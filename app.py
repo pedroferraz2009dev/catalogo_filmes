@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 from psycopg2.extras import RealDictCursor
 
 from database import criar_conexao
@@ -17,64 +17,41 @@ def listar_fimes():
 
     return render_template("index.html", filmes=resposta)
 
+@app.route('/deletar/<int:id>', methods=['POST'])
+def deletar_filme(id):
+    conn = criar_conexao()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM filmes WHERE id = %s", (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("listar_fimes"))
 
-@app.route('/filme', methods=['POST'])
-def cadastrar_filme():
-    dados = request.get_json()
+@app.route('novo', methods=["GET",'POST'])
+def novo_filme():
+    if request.method == "POST":
+        titulo = request.form['titulo']
+        genero = request.form['genero']
+        capa_url = request.form['capa']
+        nota = request.form['nota']
+        ano_lancamento = request.form['ano_lancamento']
+        usuario_id = 1
 
-    if not dados:
-        return jsonify({"erro": "Dados inválidos"}), 400
+        parametros = [titulo, genero, capa_url, nota, ano_lancamento, usuario_id]
 
-    print(f'Novo filme: {dados}')
+    sql = '''
+        INSERT INTO filmes 
+        (titulo, genero, capa_url, nota, ano_lancamento, usuario_id)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    '''
 
     conn = criar_conexao()
     cursor = conn.cursor()
-
-    cursor.execute(
-        '''
-            INSERT INTO filmes (usuario_id, titulo, ano_lancamento, genero,
-            nota, capa_url)
-            VALUES (%s, %s, %s, %s, %s, %s)
-             RETURNING id
-        ''',
-        (dados['usuario_id'], dados['titulo'], dados['ano_lancamento'], dados['genero'],
-         dados['nota'], dados['capa_url'])
-    )
-
-    novo_id = cursor.fetchone()[0]
+    cursor.execute(sql, parametros)
     conn.commit()
-
     conn.close()
+    return redirect(url_for("listar_fimes"))
 
-    return jsonify(
-        {
-            "messagem": "Filme salvo com sucesso",
-            "filme_id": novo_id
-         }
-    ), 201
-
-
-@app.route('/produto', methods=['PUT'])
-def atualizar_produto():
-    produto = {
-        "id": 1,
-        "nome": "Caneta Vermelha",
-        "preco": 1.5,
-        "descricao": "Caneta esferográfica",
-        "marca": "Bic"
-    }
-
-    dados = request.get_json()
-
-    if not dados:
-        return jsonify({"erro": "Dados inválidos"}), 400
-
-    if dados["id"] == produto["id"]:
-        produto = dados
-        print(f'roduto Atualizado {produto}')
-        return jsonify({"messagem": "Produto atualizado com sucesso"}), 201
-    else:
-        return jsonify({"message": "Produto não encontrado"}), 400
+return render_template("novo_filme.html")
 
 
 @app.route('/teste/db', methods=['GET'])

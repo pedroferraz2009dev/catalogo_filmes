@@ -30,6 +30,14 @@
                     <p><strong>Gênero:</strong>{{ filme.genero }}</p>
                     <p><strong>Lançamento:</strong>{{ filme.ano_lancamento }}</p>
                     <p><strong>Nota:</strong> {{filme.nota }}</p>
+                    <div style="margin-top: 20px">
+                        <form action="{{ url_for('deletar_filme', id=filme.id) }}" method="POST"
+                              method="POST" style="display:inline;">
+                            <button class="btn-delete" type="submit" onclick="return confirm('Tem certeza que deseja excluir?')">
+                                Excluir
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
              {% else %}
